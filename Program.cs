@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -51,15 +52,15 @@ app.MapGet("/weatherforecast", () =>
     .WithOpenApi()
     .RequireAuthorization();
 
-app.MapPost("/logout", async (SignInManager<IdentityUser> signInManager,
-        [FromBody] object empty) =>
+app.MapPost("/logout", async Task<Results<Ok, UnauthorizedHttpResult>> (SignInManager<IdentityUser> signInManager,
+        [FromBody] object? empty) =>
     {
         if (empty != null)
         {
             await signInManager.SignOutAsync();
-            return Results.Ok();
+            return TypedResults.Ok();
         }
-        return Results.Unauthorized();
+        return TypedResults.Unauthorized();
     })
     .WithOpenApi()
     .RequireAuthorization();
