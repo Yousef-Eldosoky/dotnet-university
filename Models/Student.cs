@@ -2,7 +2,7 @@ namespace University.Models;
 
 public class Student
 {
-    public int Id { get; set; }
-    public required string Name { get; set; }
-    public required Double GPA { get; set; }
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required Double GPA { get; init; }
 }

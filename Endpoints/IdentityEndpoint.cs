@@ -78,16 +78,19 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             if (!result.Succeeded)
             {
-                Random rnd = new Random();
-                var student = new Student
-                {
-                    Name = registration.Name ?? registration.FirstName + " " + registration.LastName,
-                    GPA = rnd.NextDouble() + rnd.Next(3),
-                };
-                dbContext.Students.Add(student);
-                await dbContext.SaveChangesAsync();
                 return CreateValidationProblem(result);
             }
+            
+            Random rnd = new Random();
+            var currUser = await userManager.FindByEmailAsync(email) as IdentityUser;
+            var student = new Student
+            {
+                Id = currUser!.Id,
+                Name = registration.Name ?? registration.FirstName + " " + registration.LastName,
+                GPA = rnd.NextDouble() + rnd.Next(4),
+            };
+            dbContext.Students.Add(student);
+            await dbContext.SaveChangesAsync();
 
             await SendConfirmationEmailAsync(user, userManager, context, email);
             return TypedResults.Ok();
@@ -337,20 +340,21 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             });
         });
 
-        accountGroup.MapGet("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
-            (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
+        accountGroup.MapGet("/info", async Task<Results<Ok<CustomInfoResponse>, ValidationProblem, NotFound>>
+            (ClaimsPrincipal claimsPrincipal, ApplicationDbContext dbContext, [FromServices] IServiceProvider sp) =>
         {
             var userManager = sp.GetRequiredService<UserManager<TUser>>();
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
                 return TypedResults.NotFound();
             }
-
-            return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager));
+            
+            Student? student = await dbContext.Students.FindAsync((user as IdentityUser)!.Id);
+            return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager, student!));
         });
 
-        accountGroup.MapPost("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
-            (ClaimsPrincipal claimsPrincipal, [FromBody] InfoRequest infoRequest, HttpContext context, [FromServices] IServiceProvider sp) =>
+        accountGroup.MapPost("/info", async Task<Results<Ok<CustomInfoResponse>, ValidationProblem, NotFound>>
+            (ClaimsPrincipal claimsPrincipal, [FromBody] InfoRequest infoRequest, HttpContext context, ApplicationDbContext dbContext, [FromServices] IServiceProvider sp) =>
         {
             var userManager = sp.GetRequiredService<UserManager<TUser>>();
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
@@ -387,8 +391,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                     await SendConfirmationEmailAsync(user, userManager, context, infoRequest.NewEmail, isChange: true);
                 }
             }
-
-            return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager));
+            Student? student = await dbContext.Students.FindAsync((user as IdentityUser)!.Id);
+            return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager, student!));
         });
 
         async Task SendConfirmationEmailAsync(TUser user, UserManager<TUser> userManager, HttpContext context, string email, bool isChange = false)
@@ -458,12 +462,16 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         return TypedResults.ValidationProblem(errorDictionary);
     }
 
-    private static async Task<InfoResponse> CreateInfoResponseAsync<TUser>(TUser user, UserManager<TUser> userManager)
+    private static async Task<CustomInfoResponse> CreateInfoResponseAsync<TUser>(TUser user, UserManager<TUser> userManager, Student student)
         where TUser : class
     {
+        var email = await userManager.GetEmailAsync(user) ??
+                    throw new NotSupportedException("Users must have an email.");
+        
         return new()
         {
-            Email = await userManager.GetEmailAsync(user) ?? throw new NotSupportedException("Users must have an email."),
+            Email = email,
+            Student = student,
             IsEmailConfirmed = await userManager.IsEmailConfirmedAsync(user),
         };
     }
