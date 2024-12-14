@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using University;
+using University.Data;
+using University.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +31,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapIdentityApi<IdentityUser>();
+app.CustomMapIdentityApi<IdentityUser>();
 
 var summaries = new[]
 {
