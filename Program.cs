@@ -1,8 +1,5 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using University;
 using University.Data;
 using University.Endpoints;
 
@@ -32,44 +29,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.CustomMapIdentityApi<IdentityUser>();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi()
-    .RequireAuthorization();
-
-app.MapPost("/logout", async Task<Results<Ok, UnauthorizedHttpResult>> (SignInManager<IdentityUser> signInManager,
-        [FromBody] object? empty) =>
-    {
-        if (empty != null)
-        {
-            await signInManager.SignOutAsync();
-            return TypedResults.Ok();
-        }
-        return TypedResults.Unauthorized();
-    })
-    .WithOpenApi()
-    .RequireAuthorization();
+app.MapQaEndpoint();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

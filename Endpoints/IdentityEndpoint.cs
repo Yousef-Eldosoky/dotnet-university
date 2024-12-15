@@ -263,6 +263,19 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             return TypedResults.Ok();
         });
+        
+        routeGroup.MapPost("/logout", async Task<Results<Ok, UnauthorizedHttpResult>> (SignInManager<IdentityUser> signInManager,
+                [FromBody] object? empty) =>
+            {
+                if (empty != null)
+                {
+                    await signInManager.SignOutAsync();
+                    return TypedResults.Ok();
+                }
+                return TypedResults.Unauthorized();
+            })
+            .WithOpenApi()
+            .RequireAuthorization();
 
         var accountGroup = routeGroup.MapGroup("/manage").RequireAuthorization();
 
