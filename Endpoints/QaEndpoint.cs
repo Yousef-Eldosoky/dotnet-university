@@ -16,7 +16,7 @@ public static class QaEndpoint
         RouteGroupBuilder group = endpoints.MapGroup("/qa").WithParameterValidation().RequireAuthorization();
         group.MapGet("/questions", async (ApplicationDbContext dbContext) => await dbContext.Questions.Include(q => q.Answers).AsNoTracking().ToArrayAsync());
         
-        group.MapPost("/questions", async Task<Results<NotFound, Created>> ([FromBody] QuestionDto questionBody, ApplicationDbContext dbContext, UserManager<IdentityUser> userManager, ClaimsPrincipal claimsPrincipal) =>
+        group.MapPost("/questions", [EndpointSummary("Post the question")] [EndpointName("Question post")] [EndpointDescription("This endpoint is to post a question if you a valid user.")] async Task<Results<NotFound, Created>> ([FromBody] QuestionDto questionBody, ApplicationDbContext dbContext, UserManager<IdentityUser> userManager, ClaimsPrincipal claimsPrincipal) =>
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
