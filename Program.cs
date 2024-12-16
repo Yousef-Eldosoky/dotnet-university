@@ -31,9 +31,16 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: myAllowSpecificOrigins,
         policy  =>
         {
-            policy.WithOrigins("https://university-esx.pages.dev", "http://localhost:4200", "https://university.yousefsite.com").AllowAnyHeader()
-                .AllowAnyMethod().AllowCredentials();
+            policy.WithOrigins("https://university-esx.pages.dev", "http://localhost:4200", "https://university.yousefsite.com").AllowCredentials().AllowAnyHeader()
+                .AllowAnyMethod();
         });
+});
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensures cookies are sent only over HTTPS
+    options.Cookie.HttpOnly = true; // Prevents client-side scripts from accessing cookies
+    options.Cookie.SameSite = SameSiteMode.None; // Allows cross-site requests (required for Angular)
 });
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
