@@ -4,6 +4,8 @@ using Microsoft.OpenApi.Models;
 using University.Data;
 using University.Endpoints;
 
+const string myAllowSpecificOrigins = "allowCloudFlareOrigins";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -24,6 +26,16 @@ builder.Services.AddOpenApi("internal", options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: myAllowSpecificOrigins,
+        policy  =>
+        {
+            policy.WithOrigins("https://university-esx.pages.dev", "http://localhost:4200", "https://university.yousefsite.com").AllowAnyHeader()
+                .AllowAnyMethod().AllowCredentials();
+        });
+});
+
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseSqlServer(connectionString)
@@ -35,13 +47,13 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>()
 
 var app = builder.Build();
 
+app.UseCors(myAllowSpecificOrigins);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-app.UseHttpsRedirection();
 
 app.CustomMapIdentityApi<IdentityUser>();
 app.MapQaEndpoint();
